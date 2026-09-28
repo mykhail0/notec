@@ -1,4 +1,5 @@
 default rel
+[warning -reloc-rel-dword]
 
 extern debug
 

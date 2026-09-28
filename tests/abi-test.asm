@@ -1,4 +1,5 @@
 default rel
+[warning -reloc-rel-dword]
 
 FAIL_LEN equ 16
 SUCCES_LEN equ 17

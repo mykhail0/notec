@@ -1,70 +1,78 @@
 # notec
-Noteć szesnastkowy. Concurrent calculator of reverse Polish notation written in ASM.
 
-Zaimplementuj w asemblerze x86_64 moduł Współbieżnego Szesnastkatora Noteć wykonującego obliczenia na 64-bitowych liczbach zapisywanych przy podstawie 16 i używającego odwrotnej notacji polskiej. Można uruchomić N działających równolegle instancji Notecia, numerowanych od 0 do N − 1, gdzie N jest parametrem kompilacji. Każda instancja Notecia wywoływana jest z języka C w osobnym wątku za pomocą funkcji:
+Noteć szesnastkowy. Concurrent calculator of reverse Polish notation written in
+assembly.
 
+## Specification
+
+This project implements in x86_64 assembly a module for concurrent calculator on
+64-bit numbers, written in base 16, using reverse Polish notation. It is
+possible to launch N concurrent instances of notec, indexed from 0 to N - 1,
+where N is a compilation parameter. Each notec instance can be called from C in
+a separate thread using the function:
+
+```c
 uint64_t notec(uint32_t n, char const *calc);
+```
 
-Parametr n zawiera numer instancji Notecia. Parametr calc jest wskaźnikiem na napis ASCIIZ i opisuje obliczenie, jakie ma wykonać Noteć. Obliczenie składa się z operacji wykonywanych na stosie, który na początku jest pusty. Znaki napisu interpretujemy następująco:
+`n` argument contains the index of notec instance. `calc` is an ASCIIZ string
+which describes the calculation to be performed by notec. A calculation consists
+of operations performed on a stack, which is empty at first. String's characters
+are interpreted as follows:
 
-    0 do 9, A do F, a do f – Znak jest interpretowany jako cyfra w zapisie przy podstawie 16. Jeśli Noteć jest w trybie wpisywania liczby, to liczba na wierzchołku stosu jest przesuwana o jedną pozycję w lewo i uzupełniania na najmniej znaczącej pozycji podaną cyfrą. Jeśli Noteć nie jest w trybie wpisywania liczby, to na wierzchołek stosu jest wstawiana wartość podanej cyfry. Noteć przechodzi w tryb wpisywania liczby po wczytaniu jednego ze znaków z tej grupy, a wychodzi z trybu wpisywania liczby po wczytaniu dowolnego znaku nie należącego do tej grupy.
+- `0 to 9, A to F, a to f` – the character is interpreted as a digit in base 16.
+if notec is in the input mode, then the number at the top of the stack is
+shifted one position left and the given digit goes to the least significant
+position. If notec is not in the input mode, then the value of the given digit
+is put on the stack. Notec enters input mode when meeting characters from this
+group and exits input mode when encountering any character outside of this
+group.
+- `=` – exit input mode.
+- `+` – pop two values from the stack, compute their sum and put it on the
+stack.
+- `*` – pop two values from the stack, compute their product and put it on the
+stack.
+- `-` – negate arithmetically the value on top of the stack.
+- `&` – pop two values from the stack, compute their AND and put it on the
+stack.
+- `|` – pop two values from the stack, compute their OR and put it on the stack.
+- `^` – pop two values from the stack, compute their XOR and put it on the
+stack.
+- `~` – negate bits of the value on top of the stack.
+- `Z` – pop a value from the stack.
+- `Y` – put a value on the stack, which is the current top of the stack, in
+other words duplicate the value on top of the stack.
+- `X` – swap two values from the top of the stack with each other.
+- `N` – put the number of notecs on the stack.
+- `n` – put the index of this notec instance on the stack.
+- `W` – pop a value from the stack, treat it as an index of notec instance `m`.
+Wait until operation `W` is performed by notec `m` such that `n` was popped and
+swap values on top of stacks `m` and `n`.
+- `g` – call (implemented somewhere in either C or Assembly) the following
+function:
 
-    = – Wyjdź z trybu wpisywania liczby.
+```c
+int64_t debug(uint32_t n, uint64_t *stack_pointer);
+```
 
-    + – Zdejmij dwie wartości ze stosu, oblicz ich sumę i wstaw wynik na stos.
+`n` parameter is the index of a notec instance calling this function.
+`stack_pointer` parameter points to the top of the stack. `debug` function may
+modify the stack. The return value of the function shows by how many positions
+the top of the stack should be shifted afterwards.
 
-    * – Zdejmij dwie wartości ze stosu, oblicz ich iloczyn i wstaw wynik na stos.
+After notec finishes execution of `notec`, the return value is the value from
+the top of the stack. All operations are performed on 64-bit numbers modulo
+2^64. A calculation is correct if it consists only of the characters described
+above, is null-terminated (string ends with a zero byte), does not reach for a
+value from the stack if it is empty and does not deadlock. Notec behavior for
+incorrect calculations is undefined.
 
-    - – Zaneguj arytmetycznie wartość na wierzchołku stosu.
+## Example
 
-    & – Zdejmij dwie wartości ze stosu, wykonaj na nich operację AND i wstaw wynik na stos.
+Example usage is in this [file](src/example.c). A [makefile](makefile) is
+supplied with a default target which compiles the example, clean target and a
+test target. The number of notec instances `N` must be given like so:
 
-    | – Zdejmij dwie wartości ze stosu, wykonaj na nich operację OR i wstaw wynik na stos.
-
-    ^ – Zdejmij dwie wartości ze stosu, wykonaj na nich operację XOR i wstaw wynik na stos.
-
-    ~ – Zaneguj bitowo wartość na wierzchołku stosu.
-
-    Z – Usuń wartość z wierzchołka stosu.
-
-    Y – Wstaw na stos wartość z wierzchołka stosu, czyli zduplikuj wartość na wierzchu stosu.
-
-    X – Zamień miejscami dwie wartości na wierzchu stosu.
-
-    N – Wstaw na stos liczbę Noteci.
-
-    n – Wstaw na stos numer instancji tego Notecia.
-
-    g – Wywołaj (zaimplementowaną gdzieś indziej w języku C lub Asemblerze) funkcję:
-
-    int64_t debug(uint32_t n, uint64_t *stack_pointer);
-
-    Parametr n zawiera numer instancji Notecia wywołującego tę funkcję. Parametr stack_pointer wskazuje na wierzchołek stosu Notecia. Funkcja debug może zmodyfikować stos. Wartość zwrócona przez tę funkcję oznacza, o ile pozycji należy przesunąć wierzchołek stosu po jej wykonaniu.
-
-    W – Zdejmij wartość ze stosu, potraktuj ją jako numer instancji Notecia m. Czekaj na operację W Notecia m ze zdjętym ze stosu numerem instancji Notecia n i zamień wartości na wierzchołkach stosów Noteci m i n.
-
-Po zakończeniu przez Notecia wykonywania obliczenia jego wynikiem, czyli wynikiem funkcji notec, jest wartość z wierzchołka stosu. Wszystkie operacje wykonywane są na liczbach 64-bitowych modulo 2^64. Zakładamy, że obliczenie jest poprawne, tzn. zawiera tylko opisane wyżej znaki, kończy się zerowym bajtem, nie próbuje sięgać po wartość z pustego stosu i nie doprowadza do zakleszczenia. Zachowanie Notecia dla niepoprawnego obliczenia jest niezdefiniowane.
-
-Sformułowania „zdejmij dwie wartości ze stosu”, „wstaw wynik na stos” itp. opisują semantykę operacji, a nie konieczność wykonania akurat takich operacji na stosie.
-Przykład użycia
-
-Przykład użycia umieszczony jest w załączonym poniżej pliku example.c.
-Oddawanie rozwiązania i kompilowanie
-
-Jako rozwiązanie należy wstawić w Moodle plik o nazwie notec.asm. Rozwiązanie będzie asemblowane na maszynie students.mimuw.edu.pl poleceniem:
-
-nasm -DN=$N -f elf64 -w+all -w+error -o notec.o notec.asm
-
-Przykład kompiluje się i linkuje poleceniami:
-
-gcc -DN=$N -c -Wall -Wextra -O2 -std=c11 -o example.o example.c
-gcc notec.o example.o -lpthread -o example
-
-W powyższych poleceniach zmienna $N określa wartość parametru N.
-Pozostałe wymagania
-
-Jako stosu, którego do opisanych wyżej obliczeń używa Noteć, należy użyć sprzętowego stosu procesora. Nie należy zakładać żadnych górnych ograniczeń na wartość N i rozmiar stosu, innych niż wynikające z architektury procesora i dostępnej pamięci. Nie wolno korzystać z żadnych bibliotek. Synchronizację wątków należy zaimplementować za pomocą jakiegoś wariantu wirującej blokady. Uwaga: można to zrobić bez konieczności blokowania szyny pamięci za pomocą lock.
-
-Zadanie nie wymaga napisania dużego kodu. Kod maszynowy w pliku notec.asm nie powinien zajmować więcej niż kilkaset bajtów. Jednak rozwiązanie powinno być przemyślane i dobrze przetestowane. Nie udostępniamy naszych testów, więc przetestowanie rozwiązania jest częścią zadania, choć nie wymagamy pokazywania tych testów. W szczególności na potrzeby testowania należy zaimplementować własną funkcję debug, ale nie należy jej implementacji dołączać do rozwiązania.
-
-Rozwiązanie zostanie poddane testom automatycznym. Będziemy sprawdzać poprawność wykonywania obliczenia. Dokładnie będziemy też sprawdzać zgodność rozwiązania z wymaganiami ABI, czyli prawidłowość użycia rejestrów i stosu procesora. Oceniane będą poprawność i jakość tekstu źródłowego, w tym komentarzy, rozmiar kodu maszynowego, zajętość pamięci oraz spełnienie formalnych wymagań podanych w treści zadania, np. poprawność nazwy pliku. Kod nieasemblujący się otrzyma 0 punktów. Wystawienie oceny może też być uzależnione od osobistego wyjaśnienia szczegółów działania programu prowadzącemu zajęcia.
+```bash
+make target N=10
+```
