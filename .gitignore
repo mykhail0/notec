@@ -1,4 +1,8 @@
 README.html
 build
 tests/*.o
-notec_*
+notec_test_1
+notec_test_2
+notec_test_3
+notec_test_16
+*.o

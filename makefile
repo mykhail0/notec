@@ -84,7 +84,7 @@ grading_test: test.sh $(NOTEC_SRC) $(GRADER_OBJS)
 
 test: $(EXE) $(TESTDIR) $(TESTS) grading_test
 	$(TESTDIR)/test.sh build
-	# $(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_tiny.txt
-	# $(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_small.txt
-	# $(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_medium.txt
-	# $(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_big.txt
+	$(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_tiny.txt
+	$(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_small.txt
+	$(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_medium.txt
+	$(TESTDIR)/run_tests.sh build $(TESTDIR)/tests_big.txt
