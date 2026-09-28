@@ -1,5 +1,6 @@
 NASMFLAGS = -f elf64 -w+all -w+error -w-unknown-warning
-CFLAGS = -lstdc++ -lpthread -Xlinker -z -Xlinker notext
+CXX = g++
+CXXFLAGS = -lstdc++ -lpthread -Xlinker -z -Xlinker notext
 
 ifndef binary
 $(error binary is not set)
@@ -8,7 +9,7 @@ endif
 all: ${binary}_test_1 ${binary}_test_2 ${binary}_test_3 ${binary}_test_${NNNN}
 
 ${binary}_test_%: ${binary}_student_%.o ${script_dir}/binary_%.o
-	gcc $(CFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 ${binary}_student_%.o: ${source}
 	nasm $(NASMFLAGS) -DN=$* -o $@ $^
