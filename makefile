@@ -15,7 +15,7 @@ TESTS = $(EXAMPLE) $(BUILDDIR)/abi-test $(BUILDDIR)/unit-tests \
 GRADER_OBJS = $(TESTDIR)/binary_1.o $(TESTDIR)/binary_2.o \
 			  $(TESTDIR)/binary_3.o $(TESTDIR)/binary_16.o
 
-.PHONY: all clean test grader
+.PHONY: all clean test grading_test
 
 EXAMPLE = $(BUILDDIR)/example
 
@@ -74,8 +74,8 @@ clean:
 	rm -f $(GRADER_OBJS)
 
 $(GRADER_OBJS) &: $(TESTDIR)/notec_test_stub.asm $(TESTDIR)/run_test.cpp \
-	$(TESTDIR)/test.hpp $(TEST_DIR)/test.cpp $(TESTDIR)/test_object.hpp \
-	$(TEST_DIR)/notec_test_runner.hpp $(TEST_DIR)/notec_test_runner.cpp
+ $(TESTDIR)/test.hpp $(TESTDIR)/test.cpp $(TESTDIR)/test_object.hpp \
+ $(TESTDIR)/notec_test_runner.hpp $(TESTDIR)/notec_test_runner.cpp
 	cd $(TESTDIR) && make NNNN=16 && cd ..
 
 grading_test: test.sh $(NOTEC_SRC) $(GRADER_OBJS)

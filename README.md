@@ -47,7 +47,7 @@ other words duplicate the value on top of the stack.
 - `n` – put the index of this notec instance on the stack.
 - `W` – pop a value from the stack, treat it as an index of notec instance `m`.
 Wait until operation `W` is performed by notec `m` such that `n` was popped and
-swap values on top of stacks `m` and `n`.
+swap values on top of stacks `m` and `n`. Implemented with a spinning block.
 - `g` – call (implemented somewhere in either C or Assembly) the following
 function:
 
@@ -76,3 +76,6 @@ test target. The number of notec instances `N` must be given like so:
 ```bash
 make target N=10
 ```
+
+Tests are compiled from other students in the same grade and tests released
+after the grading.

@@ -5,8 +5,6 @@ extern debug
 
 SYS_EXIT equ 60
 NOT_WAIT equ 0
-NOT_READ equ 0
-READ equ 1
 
 ; Transitions to usual mode.
 %define usual_mode xor r15b, r15b
@@ -237,28 +235,34 @@ call_debug:
   mov rdi, rbx
   mov rsi, rsp
   mov r12, rsp
-  and rsp, -16 ; Aligning the stack pointer to conform ABI.
+  and rsp, -16 ; Aligning the stack pointer to conform to ABI.
   call debug
   lea rsp, [r12 + 8 * rax] ; The adjustment of the stack pointer.
   jmp next_calculation
 
-; Pop the value m from the stack, treat it as noteć id. Wait until noteć m receives 'W'
-; and pops my id from its stack. Then switch values from the stack tops.
+; Pop the value m from the stack, treat it as noteć id. Wait until noteć m
+; receives 'W' and pops my id from its stack. Then switch values from the stack
+; tops.
 synchronize:
   pop r8 ; Noteć number to swap with and to wait for.
   pop r9 ; Value to swap.
+  cmp rbx, r8
+  je error
 
   lea rcx, [stack_top]
   mov qword [rcx + 8 * rbx], r9
 
   lea rdx, [waiting_for]
-  inc r8
-  mov qword [rdx + 8 * rbx], r8
-  dec r8
+  ; Do this atomically:
+  ; mov qword [rdx + 8 * rbx], r8 + 1
+  mov r10, r8
+  inc r10
+  xchg qword [rdx + 8 * rbx], r10
 
 ; Wait until noteć I am waiting for isn't waiting back for me
 ; (which means, stack_top is assigned alright).
 wait_to_read:
+  pause
   mov r10, qword [rdx + 8 * r8]
   dec r10
   cmp rbx, r10
@@ -266,11 +270,15 @@ wait_to_read:
   ; Get the value from the stack_top of the partner.
   push qword [rcx + 8 * r8]
   ; Let the partner know that you got the value.
-  mov qword [rdx + 8 * r8], NOT_WAIT
+  ; Do this atomically:
+  ; mov qword [rdx + 8 * r8], NOT_WAIT
+  xor r10, r10
+  xchg qword [rdx + 8 * r8], r10
 
 ; Now wait until the partner gets the value from my stack_top.
 wait_to_leave:
-  mov r10, qword [rdx + rbx]
+  pause
+  mov r10, qword [rdx + 8 * rbx]
   cmp r10, NOT_WAIT
   jne wait_to_leave
 

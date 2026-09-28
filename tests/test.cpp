@@ -340,7 +340,7 @@ Test get_test(size_t num) {
       }
 
       // Zamieniamy się z każdym innym noteciem, co nie zmienia stanu dla
-      // przystej liczby wykonań.
+      // parzystej liczby wykonań.
       const size_t rounds = 600;
       assert(rounds % 2 == 0);
       for (size_t round = 0; round < rounds; round++) {
